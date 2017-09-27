@@ -34,6 +34,9 @@
 //收到消息
 
 - (void)socket:(GCDAsyncSocket*)sock didReadData:(NSData*)data withTag:(long)tag{
+    //if your server is windows
+    NSLog(@"receive data:%@",[[NSString alloc]initWithData:data encoding:NSISOLatin1StringEncoding]);
+    //if your server is IOS
     NSString *text = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
     [self showMessageWithStr:text];
     [self.clientSocket readDataWithTimeout:-1 tag:0];
@@ -52,10 +55,11 @@
 //发送消息
 
 - (IBAction)sendMessageAction:(id)sender {
-    NSData*data = [self.messageTF.text dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *data = [self.messageTF.text dataUsingEncoding:NSUTF8StringEncoding];
     //withTimeout -1 :无穷大
     //tag：消息标记
     [self.clientSocket writeData:data withTimeout:-1 tag:0];
+    NSLog(@"message%@ send", self.messageTF.text);
 }
 
 //接收消息
