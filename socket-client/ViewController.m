@@ -62,6 +62,17 @@
     NSLog(@"message%@ send", self.messageTF.text);
 }
 
+- (IBAction)cleanMessageTV:(id)sender {
+    self.showMessageTF.text = @"";
+}
+
+- (IBAction)saveMessage:(id)sender {
+    NSString *newFilePath = @"messageLog.txt";
+    [[NSFileManager defaultManager] createFileAtPath:newFilePath contents:nil attributes:nil];
+    // Then as a you have an NSString you could simple use the writeFile: method
+    [self.showMessageTF.text writeToFile: newFilePath atomically: YES];
+}
+
 //接收消息
 
 - (IBAction)receiveMessageAction:(id)sender {
@@ -69,9 +80,7 @@
 }
 
 - (void)showMessageWithStr:(NSString*)str{
-    
     self.showMessageTF.text= [self.showMessageTF.text stringByAppendingFormat:@"%@\n", str];
-    
 }
 
 - (void)uiSetup {
@@ -83,23 +92,29 @@
     msg.text = @"消息";
     [self.view addSubview:msg];
     
-    UIButton *startListen = [[UIButton alloc] initWithFrame:CGRectMake(200, 30, 90, 30)];
+    UIButton *startListen = [[UIButton alloc] initWithFrame:CGRectMake(220, 30, 45, 30)];
     [self.view addSubview:startListen];
     [startListen setTitle:@"连接" forState:UIControlStateNormal];
     [startListen setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
     [startListen addTarget:self action:@selector(connectAction:) forControlEvents:UIControlEventTouchUpInside];
-    
+
     UIButton *sendMsg= [[UIButton alloc] initWithFrame:CGRectMake(260, 30, 70, 30)];
     [self.view addSubview:sendMsg];
     [sendMsg setTitle:@"发消息" forState:UIControlStateNormal];
     [sendMsg setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
     [sendMsg addTarget:self action:@selector(sendMessageAction:) forControlEvents:UIControlEventTouchUpInside];
     
-    UIButton *receiveMsg = [[UIButton alloc] initWithFrame:CGRectMake(220, 60, 70, 30)];
+    UIButton *clearTV = [[UIButton alloc] initWithFrame:CGRectMake(220, 60, 45, 30)];
+    [self.view addSubview:clearTV];
+    [clearTV setTitle:@"清空" forState:UIControlStateNormal];
+    [clearTV setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    [clearTV addTarget:self action:@selector(cleanMessageTV:) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIButton *receiveMsg = [[UIButton alloc] initWithFrame:CGRectMake(260, 60, 70, 30)];
     [self.view addSubview:receiveMsg];
-    [receiveMsg setTitle:@"接消息" forState:UIControlStateNormal];
+    [receiveMsg setTitle:@"存储" forState:UIControlStateNormal];
     [receiveMsg setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-    [receiveMsg addTarget:self action:@selector(receiveMessageAction:) forControlEvents:UIControlEventTouchUpInside];
+    [receiveMsg addTarget:self action:@selector(saveMessage:) forControlEvents:UIControlEventTouchUpInside];
     
     self.addressTF = [[UITextField alloc] initWithFrame:CGRectMake(60, 30, 100, 30)];
     self.addressTF.layer.borderColor = [[UIColor blackColor]CGColor];
@@ -113,7 +128,7 @@
     self.messageTF.layer.borderColor = [[UIColor blackColor]CGColor];
     self.messageTF.layer.cornerRadius=8.0f;
     self.messageTF.layer.borderWidth= 1.0f;
-    self.showMessageTF = [[UITextView alloc] initWithFrame:CGRectMake(20, 100, 300, 300)];
+    self.showMessageTF = [[UITextView alloc] initWithFrame:CGRectMake(20, 100, 280, 400)];
     self.showMessageTF.layer.backgroundColor =[[UIColor grayColor]CGColor];
     [self.view addSubview:self.addressTF];
     [self.view addSubview:self.portTF];
@@ -124,6 +139,10 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self uiSetup];
+    NSString *homeDirectory;
+    homeDirectory = NSHomeDirectory(); // Get app's home directory - you could check for a folder here too.
+    BOOL isWriteable = [[NSFileManager defaultManager] isWritableFileAtPath: homeDirectory]; //Check file path is writealbe
+    // You can now add a file name to your path and the create the initial empty file
     // Do any additional setup after loading the view, typically from a nib.
     //1、初始化
     self.clientSocket= [[GCDAsyncSocket alloc]initWithDelegate:self delegateQueue:dispatch_get_main_queue()];
