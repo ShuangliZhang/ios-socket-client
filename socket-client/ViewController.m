@@ -15,6 +15,7 @@
 @property(nonatomic)IBOutlet UITextField *portTF;
 @property(nonatomic)IBOutlet UITextField *messageTF;
 @property(nonatomic)IBOutlet UITextView *showMessageTF;
+@property(nonatomic)NSData *receivedMsg;
 
 //客户端socket
 
@@ -35,6 +36,7 @@
 
 - (void)socket:(GCDAsyncSocket*)sock didReadData:(NSData*)data withTag:(long)tag{
     //if your server is windows
+    self.receivedMsg = data;
     NSLog(@"receive data:%@",[[NSString alloc]initWithData:data encoding:NSISOLatin1StringEncoding]);
     //if your server is IOS
     NSString *text = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
@@ -68,9 +70,15 @@
 
 - (IBAction)saveMessage:(id)sender {
     NSString *newFilePath = @"messageLog.txt";
-    [[NSFileManager defaultManager] createFileAtPath:newFilePath contents:nil attributes:nil];
+    NSString *documentsPath =[self dirDoc];
+    NSString *filename = [documentsPath stringByAppendingPathComponent:newFilePath];
+    
+    NSLog(@"file saved to %@", filename);
+    [[NSFileManager defaultManager] createFileAtPath:filename contents:nil attributes:nil];
     // Then as a you have an NSString you could simple use the writeFile: method
-    [self.showMessageTF.text writeToFile: newFilePath atomically: YES];
+    [self.showMessageTF.text writeToFile: filename atomically: YES];
+    NSString *writeMsg = [NSString stringWithFormat:@"file \"%@\" has been saved.", newFilePath];
+    [self showMessageWithStr:writeMsg];
 }
 
 //接收消息
@@ -81,6 +89,32 @@
 
 - (void)showMessageWithStr:(NSString*)str{
     self.showMessageTF.text= [self.showMessageTF.text stringByAppendingFormat:@"%@\n", str];
+}
+
+-(NSString *)dirDoc{
+    //[NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSLog(@"app_home_doc: %@",documentsDirectory);
+    return documentsDirectory;
+}
+
+- (IBAction)fileTransTest:(id)sender
+{
+    NSString *documentsPath =[self dirDoc];
+//    NSFileManager *fileManager = [NSFileManager defaultManager];
+   // NSString *testDirectory = [documentsPath stringByAppendingPathComponent:folder];
+   [self showMessageWithStr:documentsPath];
+}
+
+- (IBAction)fileParser:(id)sender
+{
+    NSString *documentsPath =[self dirDoc];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    // NSString *testDirectory = [documentsPath stringByAppendingPathComponent:folder];
+    NSArray *fileList = [[NSArray alloc] init];
+    fileList = [fileManager contentsOfDirectoryAtPath:documentsPath error:NULL];
+    NSLog(@"Every Thing in the dir:%@",fileList);
 }
 
 - (void)uiSetup {
@@ -116,19 +150,33 @@
     [receiveMsg setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
     [receiveMsg addTarget:self action:@selector(saveMessage:) forControlEvents:UIControlEventTouchUpInside];
     
+    UIButton *fileTrans = [[UIButton alloc] initWithFrame:CGRectMake(20, 100, 100, 30)];
+    [self.view addSubview:fileTrans];
+    [fileTrans setTitle:@"文件传输" forState:UIControlStateNormal];
+    [fileTrans setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    [fileTrans addTarget:self action:@selector(fileTransTest:) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIButton *fileParse = [[UIButton alloc] initWithFrame:CGRectMake(120, 100, 100, 30)];
+    [self.view addSubview:fileParse];
+    [fileParse setTitle:@"文件遍历" forState:UIControlStateNormal];
+    [fileParse setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    [fileParse addTarget:self action:@selector(fileParser:) forControlEvents:UIControlEventTouchUpInside];
+    
     self.addressTF = [[UITextField alloc] initWithFrame:CGRectMake(60, 30, 100, 30)];
     self.addressTF.layer.borderColor = [[UIColor blackColor]CGColor];
     self.addressTF.layer.cornerRadius=8.0f;
     self.addressTF.layer.borderWidth= 1.0f;
+    self.addressTF.text = @"10.242.54.115";
     self.portTF = [[UITextField alloc] initWithFrame:CGRectMake(160, 30, 60, 30)];
     self.portTF.layer.borderColor = [[UIColor blackColor]CGColor];
     self.portTF.layer.cornerRadius = 8.0f;
     self.portTF.layer.borderWidth= 1.0f;
+    self.portTF.text = @"10086";
     self.messageTF = [[UITextField alloc] initWithFrame:CGRectMake(60, 65, 150, 30)];
     self.messageTF.layer.borderColor = [[UIColor blackColor]CGColor];
     self.messageTF.layer.cornerRadius=8.0f;
     self.messageTF.layer.borderWidth= 1.0f;
-    self.showMessageTF = [[UITextView alloc] initWithFrame:CGRectMake(20, 100, 280, 400)];
+    self.showMessageTF = [[UITextView alloc] initWithFrame:CGRectMake(20, 150, 280, 400)];
     self.showMessageTF.layer.backgroundColor =[[UIColor grayColor]CGColor];
     [self.view addSubview:self.addressTF];
     [self.view addSubview:self.portTF];
