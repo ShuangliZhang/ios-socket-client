@@ -9,6 +9,9 @@
 #import <Foundation/Foundation.h>
 #import "GCDAsyncSocket.h"
 
+extern NSInteger socket_message_state;
+extern BOOL have_read_the_message;
+extern max_byte_transfer;
 @interface FileTransferFormat : NSObject
 
 typedef enum
@@ -28,7 +31,7 @@ typedef enum
 - (NSString*) convertMsgToString:(StateMessages) messageID;
 - (StateMessages) convertMsgToInt:(NSString *)messageText;
 
-- (bool)sendRegistrationRequest:(NSInteger *)state withSender:(GCDAsyncSocket *)sender;
-- (bool)receiveAndSaveFiles:(NSString *)folder withSender:(GCDAsyncSocket *)sender;
+- (bool)sendRegistrationRequestwithSender:(GCDAsyncSocket *)sender withFiles:(NSArray *) files;
+- (bool)receiveAndSaveFileswithSender:(GCDAsyncSocket *)sender withFolder:(NSString *)folder withData:(NSData *)data;
 
 @end

@@ -8,7 +8,11 @@
 
 #import "ViewController.h"
 #import "GCDAsyncSocket.h"
+#import "FileTransferFormat.h"
 
+NSInteger socket_message_state = -1;
+BOOL have_read_the_message = false;
+int max_byte_transfer = 1024;
 @interface ViewController()
 
 @property(nonatomic)IBOutlet UITextField *addressTF;
@@ -16,7 +20,8 @@
 @property(nonatomic)IBOutlet UITextField *messageTF;
 @property(nonatomic)IBOutlet UITextView *showMessageTF;
 @property(nonatomic)NSData *receivedMsg;
-
+@property(nonatomic) FileTransferFormat *fileSender;
+@property(nonatomic) NSInteger stateMsg;
 //客户端socket
 
 @property(nonatomic) GCDAsyncSocket *clientSocket;
@@ -39,8 +44,11 @@
     self.receivedMsg = data;
     NSLog(@"receive data:%@",[[NSString alloc]initWithData:data encoding:NSISOLatin1StringEncoding]);
     //if your server is IOS
-    NSString *text = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
-    [self showMessageWithStr:text];
+    NSString *receivedText = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+    
+    self.stateMsg = [self.fileSender convertMsgToInt:receivedText];
+    socket_message_state =self.stateMsg;
+    [self showMessageWithStr:receivedText];
     [self.clientSocket readDataWithTimeout:-1 tag:0];
 }
 
@@ -69,16 +77,21 @@
 }
 
 - (IBAction)saveMessage:(id)sender {
-    NSString *newFilePath = @"messageLog.txt";
+    NSString *newFilePath = @"messageLog2.txt";
     NSString *documentsPath =[self dirDoc];
     NSString *filename = [documentsPath stringByAppendingPathComponent:newFilePath];
     
+    NSString *writeMsg = [NSString stringWithFormat:@"file \"%@\" has been saved.", filename];
+    [self showMessageWithStr:writeMsg];
     NSLog(@"file saved to %@", filename);
+    NSLog(self.showMessageTF.text);
     [[NSFileManager defaultManager] createFileAtPath:filename contents:nil attributes:nil];
     // Then as a you have an NSString you could simple use the writeFile: method
     [self.showMessageTF.text writeToFile: filename atomically: YES];
-    NSString *writeMsg = [NSString stringWithFormat:@"file \"%@\" has been saved.", newFilePath];
-    [self showMessageWithStr:writeMsg];
+    
+    
+    NSString *content = [NSString stringWithContentsOfFile:filename encoding:NSUTF8StringEncoding error:NULL];
+    NSLog(@"content:%@",content);
 }
 
 //接收消息
@@ -99,12 +112,30 @@
     return documentsDirectory;
 }
 
+//文件传输
 - (IBAction)fileTransTest:(id)sender
 {
     NSString *documentsPath =[self dirDoc];
-//    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
    // NSString *testDirectory = [documentsPath stringByAppendingPathComponent:folder];
-   [self showMessageWithStr:documentsPath];
+    [self showMessageWithStr:documentsPath];
+    NSArray *fileList = [[NSArray alloc] init];
+    fileList = [fileManager contentsOfDirectoryAtPath:documentsPath error:NULL];
+    NSMutableArray *filePath = [[NSMutableArray alloc] init];
+    for (NSString *file in fileList) {
+        NSString *item = [documentsPath stringByAppendingPathComponent:file];
+        [filePath addObject:item];
+    }
+    NSArray *array = [filePath copy];
+    NSLog(@"Every Thing in the dir:%@",array);
+    dispatch_queue_t queue = dispatch_queue_create("queue", DISPATCH_QUEUE_CONCURRENT);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        dispatch_async(queue,//dispatch_get_main_queue(),
+                       ^{
+                          [self.fileSender sendRegistrationRequestwithSender:self.clientSocket withFiles:array];
+                       });
+    });
+    
 }
 
 - (IBAction)fileParser:(id)sender
@@ -188,6 +219,7 @@
     [super viewDidLoad];
     [self uiSetup];
     NSString *homeDirectory;
+    self.fileSender = [FileTransferFormat alloc];
     homeDirectory = NSHomeDirectory(); // Get app's home directory - you could check for a folder here too.
     BOOL isWriteable = [[NSFileManager defaultManager] isWritableFileAtPath: homeDirectory]; //Check file path is writealbe
     // You can now add a file name to your path and the create the initial empty file
