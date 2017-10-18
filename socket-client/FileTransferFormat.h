@@ -11,7 +11,7 @@
 
 extern NSInteger socket_message_state;
 extern BOOL have_read_the_message;
-extern max_byte_transfer;
+extern int max_byte_transfer;
 @interface FileTransferFormat : NSObject
 
 typedef enum
